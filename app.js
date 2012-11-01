@@ -1,7 +1,8 @@
 var util = require('util');
 var url = require('url');
 var express = require('express');
-var nmDbEngine = 'sqlite3';
+var nmDbEngine = 'mongoose';
+//'sqlite3';
 var engine =	require('ejs-locals');
 
 var notesdb = require('./notesdb-' + nmDbEngine);

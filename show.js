@@ -1,5 +1,6 @@
 var util = require('util');
-var notesdb = require('./notesdb-sqlite3');
+//var notesdb = require('./notesdb-sqlite3');
+var notesdb = require('./notesdb-mongoose');
 
 notesdb.connect(function(error){
 	if (error) throw error;
