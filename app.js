@@ -9,12 +9,22 @@ var notesdb = require('./notesdb-' + nmDbEngine);
 var app = express();
 app.use(express.logger());
 app.use(express.bodyParser());
+app.use(express.cookieParser());
 
 app.set('view engine', 'ejs');
 app.engine('.html', engine);
 app.locals({
   _layoutFile: true
 });
+
+var checkAccess = function(req, res, next){
+	if (!req.cookies || !req.cookies.notesaccess || req.cookies.notesaccess !== 'AOK'){
+		res.redirect('/login');
+	} else {
+		next();
+	}
+}
+
 
 
 app.set('views', __dirname + '/views-' + nmDbEngine);
@@ -32,11 +42,26 @@ app.on('close', function(error){
 	notesdb.disconnect(function(err){ });
 });
 
-app.get('/', function(req, res){
+app.get('/login', function(req, res){
+
+	res.render('login.html',{
+		title : 'Notes login (' + nmDbEngine  + ' ) '
+	});
+});
+
+app.post('/login', function(req, res){
+	res.cookie('notesaccess', 'AOK', { maxAge: 900000, httpOnly: false});
 	res.redirect('/view');
 });
 
-app.get('/view', function(req, res){
+app.get('/', checkAccess, function(req, res){
+	util.log('test1');
+
+	res.redirect('/view');
+});
+
+app.get('/view', checkAccess, function(req, res){
+	util.log('test2');
 	notesdb.allNotes(function(err, notes){
 		if (err){
 			util.log(' ERROR ' + err);
@@ -50,7 +75,7 @@ app.get('/view', function(req, res){
 	});
 })
 
-app.get('/add', function(req, res){
+app.get('/add', checkAccess, function(req, res){
 	res.render('addedit.html', {
 		title : "Notes ( " + nmDbEngine + " )",
 		postpath : '/add',
@@ -58,7 +83,7 @@ app.get('/add', function(req, res){
 	});
 });
 
-app.post('/add', function(req, res){
+app.post('/add', checkAccess, function(req, res){
 	notesdb.add(
 		req.body.author, 
 		req.body.note,
@@ -69,7 +94,7 @@ app.post('/add', function(req, res){
 	);
 });
 
-app.get('/del', parseUrlParams, function(req, res){
+app.get('/del', checkAccess,  parseUrlParams, function(req, res){
 	notesdb.delete(
 		req.urlP.query.id,
 		function(error){
@@ -79,7 +104,7 @@ app.get('/del', parseUrlParams, function(req, res){
 	);
 });
 
-app.get('/edit', parseUrlParams, function(req, res){
+app.get('/edit', checkAccess, parseUrlParams, function(req, res){
 	notesdb.findNoteById(
 		req.urlP.query.id,
 		function(error, note){
@@ -93,7 +118,7 @@ app.get('/edit', parseUrlParams, function(req, res){
 	);
 });
 
-app.post('/edit', function(req, res){
+app.post('/edit', checkAccess, function(req, res){
 	notesdb.edit(
 		req.body.id, 
 		req.body.author,
